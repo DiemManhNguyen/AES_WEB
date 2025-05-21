@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mã hóa/Giải mã file bằng AES</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --secondary-color: #1e40af;
+            --success-color: #22c55e;
+            --error-color: #ef4444;
+            --background-color: #eff6ff;
+            --card-background: #ffffff;
+            --text-color: #1e293b;
+            --gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-background);
+            max-width: 640px;
+            width: 100%;
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-color);
+            text-align: center;
+            margin-bottom: 2rem;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .form-group {
+            margin-bottom: 1.75rem;
+        }
+
+        label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+            display: block;
+        }
+
+        input[type="file"],
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 0.85rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+        }
+
+        input[type="file"]:focus,
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.85rem;
+            background: var(--gradient);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .progress {
+            margin-top: 1.5rem;
+            height: 10px;
+            background: #e5e7eb;
+            border-radius: 5px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--gradient);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .result {
+            margin-top: 1.75rem;
+            padding: 1.25rem;
+            border-radius: 10px;
+            background: #dbeafe;
+            display: none;
+            font-size: 0.95rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .result.error {
+            background: #fee2e2;
+            color: var(--error-color);
+        }
+
+        .download-btn {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.6rem 1.5rem;
+            background: var(--success-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: #16a34a;
+            transform: scale(1.05);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        small.form-text {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 1.5rem; }
+            h1 { font-size: 1.6rem; }
+            button { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mã hóa/Giải mã file bằng AES</h1>
+        
+        <div class="form-group">
+            <label for="fileInput">Chọn file:</label>
+            <input type="file" id="fileInput" aria-describedby="fileHelp">
+            <small id="fileHelp" class="form-text">Chọn file bạn muốn mã hóa hoặc giải mã.</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="keyInput">Khóa AES:</label>
+            <input type="text" id="keyInput" placeholder="Nhập khóa bảo mật" aria-describedby="keyHelp">
+            <small id="keyHelp" class="form-text">Khóa phải được giữ bí mật và sử dụng cùng khóa để giải mã.</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="operation">Thao tác:</label>
+            <select id="operation" aria-describedby="operationHelp">
+                <option value="encrypt">Mã hóa</option>
+                <option value="decrypt">Giải mã</option>
+            </select>
+            <small id="operationHelp" class="form-text">Chọn mã hóa để bảo vệ file hoặc giải mã để khôi phục.</small>
+        </div>
+        
+        <button id="processBtn">Xử lý</button>
+        
+        <div class="progress" id="progressBar">
+            <div class="progress-bar" id="progressBarFill"></div>
+        </div>
+        
+        <div class="result" id="resultDiv">
+            <p id="resultText"></p>
+            <a id="downloadLink" href="#" class="download-btn" download style="display: none;">Tải file kết quả</a>
+        </div>
+    </div>
+
+    <script>
+        // Debugging: Check if CryptoJS is loaded
+        console.log('CryptoJS loaded:', typeof CryptoJS !== 'undefined');
+        
+        // Debugging: Check if button is found
+        const processBtn = document.getElementById('processBtn');
+        if (processBtn) {
+            console.log('Button found, attaching event listener');
+            processBtn.addEventListener('click', processFile);
+        } else {
+            console.error('Button with ID "processBtn" not found');
+        }
+
+        function processFile() {
+            console.log('Process button clicked');
+            const fileInput = document.getElementById('fileInput');
+            const keyInput = document.getElementById('keyInput');
+            const operation = document.getElementById('operation').value;
+            const resultDiv = document.getElementById('resultDiv');
+            const resultText = document.getElementById('resultText');
+            const downloadLink = document.getElementById('downloadLink');
+            const progressBar = document.getElementById('progressBar');
+            const progressBarFill = document.getElementById('progressBarFill');
+            
+            // Reset previous states
+            resultDiv.classList.remove('error');
+            resultDiv.style.display = 'none';
+            downloadLink.style.display = 'none';
+            
+            // Kiểm tra đầu vào
+            if (!fileInput.files[0]) {
+                console.log('No file selected');
+                resultText.textContent = 'Vui lòng chọn file!';
+                resultDiv.classList.add('error');
+                resultDiv.style.display = 'block';
+                alert('Vui lòng chọn file!');
+                return;
+            }
+            
+            if (!keyInput.value) {
+                console.log('No key entered');
+                resultText.textContent = 'Vui lòng nhập khóa!';
+                resultDiv.classList.add('error');
+                resultDiv.style.display = 'block';
+                alert('Vui lòng nhập khóa!');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            // Hiển thị thanh tiến trình
+            progressBar.style.display = 'block';
+            progressBarFill.style.width = '0%';
+            
+            reader.onload = function(e) {
+                try {
+                    console.log('File read successfully, starting processing');
+                    const fileData = e.target.result;
+                    const key = CryptoJS.enc.Utf8.parse(keyInput.value);
+                    
+                    // Tạo salt ngẫu nhiên
+                    const salt = CryptoJS.lib.WordArray.random(128/8);
+                    
+                    // Tạo key và IV từ khóa người dùng nhập
+                    const keyAndIv = CryptoJS.PBKDF2(key.toString(), salt, {
+                        keySize: 48/4,
+                        iterations: 1000
+                    });
+                    
+                    const derivedKey = CryptoJS.lib.WordArray.create(keyAndIv.words.slice(0, 32/4));
+                    const derivedIv = CryptoJS.lib.WordArray.create(keyAndIv.words.slice(32/4, 48/4));
+                    
+                    let result;
+                    let outputFilename;
+                    
+                    if (operation === 'encrypt') {
+                        console.log('Encrypting file');
+                        progressBarFill.style.width = '50%';
+                        const encrypted = CryptoJS.AES.encrypt(fileData, derivedKey, { 
+                            iv: derivedIv,
+                            padding: CryptoJS.pad.Pkcs7,
+                            mode: CryptoJS.mode.CBC
+                        });
+                        
+                        // Kết hợp salt và dữ liệu mã hóa
+                        result = salt.toString() + encrypted.toString();
+                        outputFilename = file.name + '.enc';
+                    } else {
+                        console.log('Decrypting file');
+                        progressBarFill.style.width = '50%';
+                        
+                        // Tách salt từ dữ liệu
+                        const salt = CryptoJS.enc.Hex.parse(fileData.substring(0, 32));
+                        const encryptedData = fileData.substring(32);
+                        
+                        // Tạo lại key và IV
+                        const keyAndIv = CryptoJS.PBKDF2(key.toString(), salt, {
+                            keySize: 48/4,
+                            iterations: 1000
+                        });
+                        
+                        const derivedKey = CryptoJS.lib.WordArray.create(keyAndIv.words.slice(0, 32/4));
+                        const derivedIv = CryptoJS.lib.WordArray.create(keyAndIv.words.slice(32/4, 48/4));
+                        
+                        const decrypted = CryptoJS.AES.decrypt(encryptedData, derivedKey, { 
+                            iv: derivedIv,
+                            padding: CryptoJS.pad.Pkcs7,
+                            mode: CryptoJS.mode.CBC
+                        });
+                        
+                        result = decrypted.toString(CryptoJS.enc.Utf8);
+                        
+                        outputFilename = file.name.endsWith('.enc') ? file.name.slice(0, -4) : 'decrypted_' + file.name;
+                    }
+                    
+                    progressBarFill.style.width = '100%';
+                    
+                    // Tạo blob từ kết quả
+                    let blob;
+                    if (operation === 'encrypt') {
+                        blob = new Blob([result], { type: 'application/octet-stream' });
+                    } else {
+                        if (!result) {
+                            throw new Error('Giải mã thất bại. Có thể khóa không đúng.');
+                        }
+                        blob = new Blob([result], { type: 'application/octet-stream' });
+                    }
+                    
+                    // Tạo URL để tải về
+                    const url = URL.createObjectURL(blob);
+                    downloadLink.href = url;
+                    downloadLink.setAttribute('download', outputFilename);
+                    downloadLink.style.display = 'inline-block';
+                    
+                    // Hiển thị kết quả
+                    resultText.textContent = operation === 'encrypt' 
+                        ? 'Mã hóa thành công! Nhấn nút bên dưới để tải file đã mã hóa.' 
+                        : 'Giải mã thành công! Nhấn nút bên dưới để tải file đã giải mã.';
+                    resultDiv.style.display = 'block';
+                    
+                } catch (error) {
+                    console.error('Error during processing:', error.message);
+                    resultText.textContent = 'Lỗi: ' + error.message;
+                    resultDiv.classList.add('error');
+                    resultDiv.style.display = 'block';
+                    downloadLink.style.display = 'none';
+                    alert('Lỗi: ' + error.message);
+                }
+            };
+            
+            reader.onerror = function() {
+                console.error('FileReader error');
+                resultText.textContent = 'Lỗi khi đọc file!';
+                resultDiv.classList.add('error');
+                resultDiv.style.display = 'block';
+                alert('Lỗi khi đọc file!');
+            };
+            
+            if (operation === 'encrypt') {
+                reader.readAsDataURL(file);
+            } else {
+                reader.readAsText(file);
+            }
+        }
+    </script>
+</body>
+</html>
